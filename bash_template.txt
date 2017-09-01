@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+#Setup debugging
+# use the "-x" argument to turn debugging on.
+debugging=1 # 1=debug on, 0=debug off
+
+# Get a timestamp
+tstamp=$(date +%Y%m%d)
+
+debugit()
+    { # Output debug messages if the debugging flag is set.
+      # Prints any/all arguments to stdout if debugging is on.
+    if [ ${debugging} == 1 ]
+        then echo "DEBUG: $@"
+    fi
+    }
+
+disp_help()
+    { # Print script help to screen, and exit.
+      # Optional argument will set exit value.
+        echo "This is help."
+        echo "usage: $0 {COMMAND} {OPTION} {ARGUMENTS}"
+        if [ $# = 1 ]
+            then
+                if [[ $1 ~= '^[0-9]+$' ]]
+                    then exit $1
+                    else exit 2
+                fi
+            else
+                exit
+        fi
+    }
+
+
+# Commands
+if (( $# >= 1 ))
+    then
+        debugit "Parsing command"
+        if [ ${1#-} = $1 ]
+            then
+                commandArg="$1"
+                shift
+                debugit "Command specified is: ${commandArg}"
+
+                case ${commandArg} in
+                    yyyy)
+                        debugit "Recognized command: ${commandArg}"
+                    ;;
+                    *)
+                        debugit "Unknown command: ${commandArg}"
+                        echo "${0}: Unknown command: ${commandArg}" >&2
+                        disp_help 1
+                esac
+            else
+                commandArg="NULL"
+        fi
+    else
+        debugit "No command specified"
+        disp_help
+fi
+
+
+# Options
+optspec="hx:-:"
+while getopts "${optspec}" opt
+    do
+        case "${opt}" in
+            -)
+                case "${OPTARG}" in
+                    xxxx)
+                        opt_xxxx="${!OPTIND}"
+                        (( OPTIND++ ))
+                    ;;
+                    xxxx=*)
+                        opt_xxxx=${OPTARG#*=}
+                    ;;
+                    *)
+                        if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
+                            echo "Unknown option --${OPTARG}" >&2
+                        fi
+                    ;;
+                esac
+            ;;
+            x)
+                opt_x=${OPTARG}
+            ;;
+            h)
+                disp_help 0
+            ;;
+        esac
+    done
+shift $((OPTIND-1))
+
+# Arguments
+if [ $# > 0 ]
+    then
+        debugit "Parsing arguments"
+        #Set argument variables here, like arg_file=$1
+fi
