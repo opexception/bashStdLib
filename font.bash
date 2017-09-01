@@ -7,6 +7,7 @@ fecho()
     then
     # Are we in an interactive terminal?
     if test -t 1
+      then
       # Does this terminal support color?
       ncolors=$(tput colors)
       if test -n "$ncolors" && test $ncolors -ge 8
