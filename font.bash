@@ -132,7 +132,7 @@ fecho()
   echo
   }
 
-help()
+fecho_help()
   { # Show help
   fecho -n "fecho = " -u "f" -n "ancy " -u "echo"
   echo
@@ -151,10 +151,6 @@ help()
   }
 
 # Known issues:
-# fecho_old(): Cannot safely be used with getopts to process the scripts CLI arguments.
-#  this is why the new fecho was created
-# fecho_old(): Little error handling around invalid arguments.
-# fecho_old(): Does not test terminal capability
 
 # To-Do:
-# fuzz the new fecho()! Need *some* error handling
+# fuzz fecho(), Need *some* error handling!

@@ -1,19 +1,204 @@
 #!/usr/bin/env bash
 
-#Setup debugging
-# use the "-x" argument to turn debugging on.
-debugging=1 # 1=debug on, 0=debug off
+###############################################################################
+## Initialize some variables
+###############################################################################
+HOSTNAME=$(hostname)
+
+# Remove the first ".", and everything after it from $HOSTNAME
+SHORT_NAME=${HOSTNAME%%.*} 
+
+ # Remove the first ".", and everything before it from $HOSTNAME
+FULL_DOMAIN=${HOSTNAME#*.}
+
+# Remove the first ".", and everything after it from $FULL_DOMAIN
+DOMAIN=${FULL_DOMAIN%%.*} 
+
+# Full path to the scrit that we'll use to retrieve YAML variables.
+YAML_SCRIPT="/cad/adi/etc/yaml/adyaml.py"
+
+# Get this processes PID
+MYPID=$$
 
 # Get a timestamp
-tstamp=$(date +%Y%m%d)
+TIMESTAMP=$(date +%Y%m%d)
+
+# Get the base directory of this script
+SOURCE_DIR="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE_DIR" ]; do # resolve $SOURCE until the file is no longer a symlink
+  BIN_DIR="$( cd -P "$( dirname "$SOURCE_DIR" )" >/dev/null 2>&1 && pwd )"
+  SOURCE_DIR="$(readlink "$SOURCE_DIR")"
+  [[ $SOURCE_DIR != /* ]] && SOURCE_DIR="$BIN_DIR/$SOURCE_DIR" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+BIN_DIR="$( cd -P "$( dirname "$SOURCE_DIR" )" >/dev/null 2>&1 && pwd )"
+
+
+
+###############################################################################
+## SETUP DEBUGGING/LOGGING
+###############################################################################
+# use the "-x" argument to set debugging.
+# Initial debug level. Will be overwritten by "-x" argument, once it has been parsed.
+#debug_level=0 # Silent. No additional debug output at all
+debug_level=1 # Write only ERRORs to stderr
+#debug_level=2 # Write ERRORs to stderr, and WARNINGs to stdout
+#debug_level=3 # Write ERRORs to stderr, WARNINGs and INFOs to stdout
+#debug_level=4 # Write ERRORs to stderr, WARNINGs, INFOs, and DEBUGs to stdout
+
 
 debugit()
-    { # Output debug messages if the debugging flag is set.
-      # Prints any/all arguments to stdout if debugging is on.
-    if [ ${debugging} == 1 ]
-        then echo "DEBUG: $@"
-    fi
+    { # Output debug messages depending on how $debug_level is set.
+      # first argument is the type of message. Must be one of the following:
+      #    ERROR
+      #    WARNING
+      #    INFO
+      #    DEBUG
+      # Example: 
+      #   debugit INFO "This is how you use the debug feature."
+      # Example output:
+      #   INFO: This is how you use the debug feature.
+
+    case ${debug_level} in
+        0)
+            return 0
+        ;;
+        1)
+            case ${1} in
+                ERROR)
+                    shift
+                    >&2 echo -e "ERROR: $@"
+                    return 0
+                ;;
+                WARNING)
+                    return 0
+                ;;
+                INFO)
+                    return 0
+                ;;
+                DEBUG)
+                    return 0
+                ;;
+                *)
+                    >&2 echo -e "INTERNAL ERROR - Debug message type '$1' is invalid."
+                    return 1
+                ;;
+            esac
+        ;;
+        2)
+            case ${1} in
+                ERROR)
+                    shift
+                    >&2 echo -e "ERROR: $@"
+                    return 0
+                ;;
+                WARNING)
+                    shift
+                    echo -e "WARNING: $@"
+                    return 0
+                ;;
+                INFO)
+                    return 0
+                ;;
+                DEBUG)
+                    return 0
+                ;;
+                *)
+                    >&2 echo -e "INTERNAL ERROR - Debug message type '$1' is invalid."
+                    exit 1
+                ;;
+            esac
+        ;;
+        3)
+            case ${1} in
+                ERROR)
+                    shift
+                    >&2 echo -e "ERROR: $@"
+                    return 0
+                ;;
+                WARNING)
+                    shift
+                    echo -e "WARNING: $@"
+                    return 0
+                ;;
+                INFO)
+                    shift
+                    echo -e "INFO: $@"
+                    return 0
+                ;;
+                DEBUG)
+                    return 0
+                ;;
+                *)
+                    >&2 echo "INTERNAL ERROR - Debug message type '$1' is invalid."
+                    return 1
+                ;;
+            esac
+        ;;
+        4)
+            case ${1} in
+                ERROR)
+                    shift
+                    >&2 echo -e "ERROR: $@"
+                    return 0
+                ;;
+                WARNING)
+                    shift
+                    echo -e "WARNING: $@"
+                    return 0
+                ;;
+                INFO)
+                    shift
+                    echo -e "INFO: $@"
+                    return 0
+                ;;
+                DEBUG)
+                    shift
+                    echo -e "DEBUG: $@"
+                    return 0
+                ;;
+                *)
+                    >&2 echo "INTERNAL ERROR - Debug message type '$1' is invalid."
+                    return 1
+                ;;
+            esac
+        ;;
+        *)
+            echo "INTERNAL ERROR - Invalid debug level '${debug_level}'"
+            echo "Setting debug level to default of 3"
+            debug_level=3
+        ;;
+    esac
     }
+
+
+yay_nay()
+    { # A yes/no prompt
+    if (( $# > 0 ))
+        then
+            MSG="$@"
+        else
+            MSG="Would you like to continue?"
+    fi
+    read -p "${MSG} [y/N]: " yaynay
+    yaynay=$(echo ${yaynay:0:1} | tr "[a-z]" "[A-Z]")
+    case ${yaynay} in
+        Y)
+            return 0
+        ;;
+        N)
+            return 1
+        ;;
+        "")
+            return 1 # Default to No
+            #return 0 # Default to Yes
+        ;;
+        *)
+            yay_nay $@
+            return $?
+        ;;
+    esac
+    }
+
 
 disp_help()
     { # Print script help to screen, and exit.
