@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-
 ###############################################################################
 ## Initialize some variables
 ###############################################################################
 HOSTNAME=$(uname -n)
+
 
 # Remove the first ".", and everything after it from $HOSTNAME
 SHORT_NAME=${HOSTNAME%%.*} 
@@ -15,16 +15,36 @@ FULL_DOMAIN=${HOSTNAME#*.}
 # Remove the first ".", and everything after it from $FULL_DOMAIN
 DOMAIN=${FULL_DOMAIN%%.*} 
 
+# Full path to the scrit that we'll use to retrieve YAML variables.
+YAML_SCRIPT="/cad/adi/etc/yaml/adyaml.py"
+
+# Get this processes PID
+MYPID=$$
+
 # Get a timestamp
 tstamp=$(date +%Y%m%d%H%M%S)
 
+# Get the base directory of this script
+SOURCE_DIR="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE_DIR" ]; do # resolve $SOURCE until the file is no longer a symlink
+  BIN_DIR="$( cd -P "$( dirname "$SOURCE_DIR" )" >/dev/null 2>&1 && pwd )"
+  SOURCE_DIR="$(readlink "$SOURCE_DIR")"
+  [[ $SOURCE_DIR != /* ]] && SOURCE_DIR="$BIN_DIR/$SOURCE_DIR" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+BIN_DIR="$( cd -P "$( dirname "$SOURCE_DIR" )" >/dev/null 2>&1 && pwd )"
+
+
+
+###############################################################################
+## SETUP DEBUGGING/LOGGING
+###############################################################################
 # use the "-x" argument to set debugging.
 # Initial debug level. Will be overwritten by "-x" argument, once it has been parsed.
 #debug_level=0 # Silent. No additional debug output at all
-#debug_level=1 # Write only ERRORs to stderr
+debug_level=1 # Write only ERRORs to stderr
 #debug_level=2 # Write ERRORs to stderr, and WARNINGs to stdout
 #debug_level=3 # Write ERRORs to stderr, WARNINGs and INFOs to stdout
-debug_level=4 # Write ERRORs to stderr, WARNINGs, INFOs, and DEBUGs to stdout
+#debug_level=4 # Write ERRORs to stderr, WARNINGs, INFOs, and DEBUGs to stdout
 
 debugit()
     { # Output debug messages depending on how $debug_level is set.
@@ -149,6 +169,36 @@ debugit()
         ;;
     esac
     }
+
+
+yay_nay()
+    { # A yes/no prompt
+    if (( $# > 0 ))
+        then
+            MSG="$@"
+        else
+            MSG="Would you like to continue?"
+    fi
+    read -p "${MSG} [y/N]: " yaynay
+    yaynay=$(echo ${yaynay:0:1} | tr "[a-z]" "[A-Z]")
+    case ${yaynay} in
+        Y)
+            return 0
+        ;;
+        N)
+            return 1
+        ;;
+        "")
+            return 1 # Default to No
+            #return 0 # Default to Yes
+        ;;
+        *)
+            yay_nay $@
+            return $?
+        ;;
+    esac
+    }
+
 
 disp_help()
     { # Print script help to screen, and exit.

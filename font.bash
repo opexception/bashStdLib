@@ -132,6 +132,7 @@ fecho()
     echo
     }
 
+
 help()
     { # Show help
     fecho -n "fecho = " -u "f" -n "ancy " -u "echo"
@@ -159,3 +160,5 @@ help()
 # - Implement colors
 #
 # - Simplify formatted string building. Need less case statement?
+
+

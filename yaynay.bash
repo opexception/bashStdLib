@@ -4,20 +4,21 @@
 #
 # Ask a Yes/No question
 
-read -p "Would you like to continue? (answering 'no' will exit) [y/n]" yaynay
-yaynay=$(echo ${yaynay:0:1} | tr "[a-z]" "[A-Z]")
-case ${yaynay} in
-  Y)
-    continue
-    ;;
-  N)
-    exit 1
-    ;;
-  *)
-    echo "Reply hazy... please try again later."
-    echo "Exiting."
-    exit 1
-esac
+## As a standalone script
+# read -p "Would you like to continue? (answering 'no' will exit) [y/n]" yaynay
+# yaynay=$(echo ${yaynay:0:1} | tr "[a-z]" "[A-Z]")
+# case ${yaynay} in
+#   Y)
+#     continue
+#     ;;
+#   N)
+#     exit 1
+#     ;;
+#   *)
+#     echo "Reply hazy... please try again later."
+#     echo "Exiting."
+#     exit 1
+# esac
 
 # As a function:
 yay_nay()
