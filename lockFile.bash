@@ -1,75 +1,101 @@
 #!/bin/bash
 
-edit_this_file="$1"
+FILE_TO_EDIT="$1"
 
-# Lock file in the /tmp directory
-lock_file="/tmp/lock_file"
+# Lock file in the /tmp directory, also remove and path to get only file name.
+LOCK_FILE="/tmp/${FILE_TO_EDIT##*/}.lck"
 
+# Clean up lock file on script exit
+trap "rm -f ${LOCK_FILE}" EXIT
 
 # Get this processes PID
 MYPID=$$
 
 # Get a timestamp
-time_stamp=$(date +%Y%m%d)
+tstamp=$(date +%Y%m%d)
 
-function verify_lock {
-    locked_by=( $(head -1 $lock_file) )
-    locking_user=${locked_by[0]}
-    locking_pid=${locked_by[1]}
-    locked_since=${locked_by[2]}
-    if [ "$locking_pid" != "$MYPID" ]; then
-        echo -e "File is locked by \"${locking_user}\" with process \"${locking_pid}\" since \"${locked_since}\"."
-        got_lock="false"
-        return 1
-    else
-        echo -e "Acquired successful lock on \"${edit_this_file}\""
-        got_lock="true"
-        return 0
-    fi
-}
+function verify_lock
+    { # Used by lock_check() to validate the successful creation of a lock file while avoiding race conditions from competing processes.
+        local locked_by
 
-function create_lock {
-    echo -e "Attempting to lock \"${edit_this_file}\" for edit..."
-    touch $lock_file
-    echo "${USER} ${MYPID} ${time_stamp}" >> $lock_file  #Append rather than overwirite, because other process can blow away a sucessful lock in a race condition.
-}
+        # locked_by has 3 ordered elements: 0-User who locked it, 1-PID of locking process, and 2-Timestamp of the lock
+        locked_by=( $(head -1 ${LOCK_FILE}) )
 
-function lock_check {
-    echo "Checking for lock file..."
-    COUNT=0
-    TIMEOUT=""
-    while [ -f $lock_file ]
-        do
-            if [ $COUNT -gt 1800 ]; then
-                TIMEOUT=1
-                break
-            fi
-
-            verify_lock
-            if [ $? == "0" ]; then
-                break
+        if [ "${locked_by[1]}" != "${MYPID}" ]
+            then
+                echo -e "File is locked by \"${locked_by[0]}\" with process \"${locked_by[1]}\" since \"${locked_by[2]}\"."
+                GOT_LOCK="false"
+                return 1
             else
-                sleep 2
-                COUNT=$(( COUNT + 1 ))
-                continue
-            fi
-        done
-
-    if [ "$TIMEOUT" != "1" ]; then
-        if [ "$got_lock" != "true" ]; then
-            if [ -f $lock_file ]; then
-                lock_check
-            else
-                create_lock
-                lock_check
-            fi
-        else
-            return 0
+                echo -e "Acquired successful lock"
+                GOT_LOCK="true"
+                return 0
         fi
-    else
-        echo "Lock file check took longer than 1 hour, exiting"
-        exit 2
-    fi
-}
+    }
+
+
+function create_lock
+    { # Create a lock file
+        echo -e "Attempting to lock '${FILE_TO_EDIT}' for edit"
+        if touch ${LOCK_FILE}
+            then
+                echo "${USER} ${MYPID} ${tstamp}" >> ${LOCK_FILE}  #Append rather than overwirite, because other process can blow away a sucessful lock in a race condition.
+            else
+                echo "Unable to create or write lock file '${LOCK_FILE}'"
+                exit 1
+        fi
+    }
+
+
+function lock_check
+    { # Check if we have a lock file, and if not, create one. 
+      # timeout=n can be used to wait for a lock file to become available for "n" seconds
+        echo "Checking for lock file..."
+
+        local count
+        local timeout
+        local timed_out
+        count=0
+        timeout=60
+        timed_out=""
+        while [ -f ${LOCK_FILE} ]
+            do
+                if [ $count -gt ${timeout} ]
+                    then
+                        timed_out=1
+                        break
+                fi
+
+                verify_lock
+                if [ $? == "0" ]
+                    then
+                        break
+                    else
+                        sleep 1
+                        (( count++ ))
+                        continue
+                fi
+            done
+
+        if [ "${timed_out}" != "1" ]
+            then
+                if [ "${GOT_LOCK}" != "true" ]
+                    then
+                        if [ -f ${LOCK_FILE} ]
+                            then
+                                lock_check
+                            else
+                                create_lock
+                                lock_check
+                        fi
+                    else
+                        return 0
+                fi
+            else
+                echo "Lock file unavailable for more than ${timeout} seconds, exiting"
+                exit 2
+        fi
+    }
+
 
 lock_check
