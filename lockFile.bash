@@ -5,16 +5,23 @@ FILE_TO_EDIT="$1"
 # Lock file in the /tmp directory, also remove and path to get only file name.
 LOCK_FILE="/tmp/${FILE_TO_EDIT##*/}.lck"
 
-# Clean up lock file on script exit
-trap "rm -f ${LOCK_FILE}" EXIT
-
-# Get this processes PID
+# Get this process' PID
 MYPID=$$
+
+# Clean up lock file on script exit
+tidy ()
+    {
+        if [ -f ${LOCK_FILE} ] && [ "$(head -1 ${LOCK_FILE}| awk '{print $2}')" == "${MYPID}" ]
+            then
+                rm -f ${LOCK_FILE}
+        fi
+    }
+trap "tidy" EXIT
 
 # Get a timestamp
 tstamp=$(date +%Y%m%d)
 
-function verify_lock
+verify_lock ()
     { # Used by lock_check() to validate the successful creation of a lock file while avoiding race conditions from competing processes.
         local locked_by
 
@@ -39,7 +46,7 @@ function verify_lock
     }
 
 
-function create_lock
+create_lock ()
     { # Create a lock file
         echo -e "Attempting to lock '${FILE_TO_EDIT}' for edit"
         if touch ${LOCK_FILE}
@@ -52,7 +59,7 @@ function create_lock
     }
 
 
-function lock_check
+lock_check ()
     { # Check if we have a lock file, and if not, create one. 
       # timeout=n can be used to wait for a lock file to become available for "n" seconds
         echo "Checking for lock file..."
@@ -96,7 +103,7 @@ function lock_check
                         return 0
                 fi
             else
-                echo "Lock file unavailable for more than ${timeout} seconds, exiting"
+                echo -e " :(\nLock file unavailable for more than ${timeout} seconds, exiting"
                 exit 2
         fi
     }
