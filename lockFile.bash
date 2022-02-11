@@ -23,8 +23,13 @@ function verify_lock
 
         if [ "${locked_by[1]}" != "${MYPID}" ]
             then
-                echo -e "File is locked by \"${locked_by[0]}\" with process \"${locked_by[1]}\" since \"${locked_by[2]}\"."
-                GOT_LOCK="false"
+                if [ "${GOT_LOCK}" == "false" ]
+                    then
+                        echo -n "."
+                    else
+                        echo -e "File is locked by \"${locked_by[0]}\" with process \"${locked_by[1]}\" since \"${locked_by[2]}\"."
+                        GOT_LOCK="false"
+                fi
                 return 1
             else
                 echo -e "Acquired successful lock"
@@ -66,8 +71,7 @@ function lock_check
                         break
                 fi
 
-                verify_lock
-                if [ $? == "0" ]
+                if verify_lock
                     then
                         break
                     else
