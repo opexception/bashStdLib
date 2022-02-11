@@ -8,29 +8,29 @@ fecho()
         # Are we in an interactive terminal?
         if test -t 1
             then
-            # Does this terminal support color?
-            ncolors=$(tput colors)
-            if test -n "$ncolors" && test $ncolors -ge 8
-                then
-                    # Setup build font list, This may be SLOW!, but only once.
-                    NORM_f=$(tput sgr0) # Set terminal output back to NORMal
-                    BOLD_f=$(tput bold) # Set terminal output to BOLD
-                    INV_f=$(tput smso) # Set terminal output to INVert foreground/background
-                    UL_f=$(tput smul) # Set terminal output to UnderLine
-                    NOUL_f=$(tput rmul) # Remove UnderLine
-                    BLACK_f="$(tput setaf 0)"
-                    RED_f="$(tput setaf 1)"
-                    GREEN_f="$(tput setaf 2)"
-                    YELLOW_f="$(tput setaf 3)"
-                    BLUE_f="$(tput setaf 4)"
-                    MAGENTA_f="$(tput setaf 5)"
-                    CYAN_f="$(tput setaf 6)"
-                    WHITE_f="$(tput setaf 7)"
-                    # Setting $font_init prevents having to set all these fonts again
-                    font_init=1
-                else
-                    no_font=1
-            fi
+                # Does this terminal support color?
+                ncolors=$(tput colors)
+                if test -n "$ncolors" && test $ncolors -ge 8
+                    then
+                        # Setup build font list, This may be SLOW!, but only once.
+                        NORM_f=$(tput sgr0) # Set terminal output back to NORMal
+                        BOLD_f=$(tput bold) # Set terminal output to BOLD
+                        INV_f=$(tput smso) # Set terminal output to INVert foreground/background
+                        UL_f=$(tput smul) # Set terminal output to UnderLine
+                        NOUL_f=$(tput rmul) # Remove UnderLine
+                        BLACK_f="$(tput setaf 0)"
+                        RED_f="$(tput setaf 1)"
+                        GREEN_f="$(tput setaf 2)"
+                        YELLOW_f="$(tput setaf 3)"
+                        BLUE_f="$(tput setaf 4)"
+                        MAGENTA_f="$(tput setaf 5)"
+                        CYAN_f="$(tput setaf 6)"
+                        WHITE_f="$(tput setaf 7)"
+                        # Setting $font_init prevents having to set all these fonts again
+                        font_init=1
+                    else
+                        no_font=1
+                fi
         else
             no_font=1
         fi
