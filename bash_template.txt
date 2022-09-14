@@ -16,7 +16,7 @@ FULL_DOMAIN=${HOSTNAME#*.}
 DOMAIN=${FULL_DOMAIN%%.*} 
 
 # Full path to the scrit that we'll use to retrieve YAML variables.
-YAML_SCRIPT="/cad/adi/etc/yaml/adyaml.py"
+YAML_SCRIPT="/global/bin/yaml/yaml.py"
 
 # Get this processes PID
 MYPID=$$
